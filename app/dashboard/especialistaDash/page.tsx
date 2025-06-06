@@ -195,9 +195,9 @@ export default function DashboardPage() {
                   asChild
                   className="h-20 flex-col space-y-2 bg-teal-600 hover:bg-teal-700"
                 >
-                  <Link href="/dashboard/patients/new">
+                  <Link href="/dashboard/diagnosticoP">
                     <UserPlus className="h-6 w-6" />
-                    <span>Registrar Paciente</span>
+                    <span>Evaluciones Pendientes</span>
                   </Link>
                 </Button>
                 <Button
@@ -205,9 +205,9 @@ export default function DashboardPage() {
                   variant="outline"
                   className="h-20 flex-col space-y-2"
                 >
-                  <Link href="/dashboard/evaluations/new">
+                  <Link href="/dashboard/diagnosticoR">
                     <ClipboardList className="h-6 w-6" />
-                    <span>Nueva Evaluación</span>
+                    <span>Evaluaciones Realizadas</span>
                   </Link>
                 </Button>
                 <Button

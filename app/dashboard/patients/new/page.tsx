@@ -157,7 +157,7 @@ export default function NewPatientPage() {
             Registrar Nuevo Paciente
           </h1>
           <p className="text-gray-600 mt-2">
-            Complete la información del tutor y del paciente
+            Complete la información del tutor-evaluado y del paciente
           </p>
         </div>
 
@@ -171,7 +171,7 @@ export default function NewPatientPage() {
           {/* Información del Tutor */}
           <Card>
             <CardHeader>
-              <CardTitle>Información del Tutor</CardTitle>
+              <CardTitle>Información del Tutor - Evaluado</CardTitle>
               <CardDescription>
                 Datos de la persona responsable del menor
               </CardDescription>
