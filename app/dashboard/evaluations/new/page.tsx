@@ -123,10 +123,32 @@ export default function NewEvaluationPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  // Función para actualizar el estado de la sesión
+  const updateSessionStatus = async (sessionId: number) => {
+    try {
+      const userCookie = Cookies.get("user");
+      if (!userCookie) {
+        router.push("/login");
+        return;
+      }
+      // PATCH correcto según tu backend
+      await axios.patch(
+        `https://localhost:7032/api/Evaluaciones/${sessionId}/estado`,
+        {
+          sesionID: sessionId,
+          estado: "completado",
+        }
+      );
+    } catch (err) {
+      console.error("Error al actualizar estado de sesión:", err);
+      // No detenemos el flujo aunque falle esta actualización
+    }
+  };
+
   // 1. Traer datos del paciente al montar
   useEffect(() => {
-    if (!pacienteId) {
-      setError("No se ha especificado un paciente");
+    if (!pacienteId || isNaN(parseInt(pacienteId))) {
+      setError("ID de paciente no válido");
       setLoading(false);
       return;
     }
@@ -156,7 +178,7 @@ export default function NewEvaluationPage() {
     setAnswers((prev) => ({ ...prev, [questionId]: value }));
   };
 
-  // 3. Al hacer clic “Siguiente” o “Finalizar”
+  // 3. Al hacer clic "Siguiente" o "Finalizar"
   const handleNextQuestion = () => {
     if (currentQuestion < mchatQuestions.length - 1) {
       setCurrentQuestion((q) => q + 1);
@@ -165,7 +187,7 @@ export default function NewEvaluationPage() {
     }
   };
 
-  // 4. “Anterior”
+  // 4. "Anterior"
   const handlePreviousQuestion = () => {
     if (currentQuestion > 0) setCurrentQuestion((q) => q - 1);
   };
@@ -180,11 +202,10 @@ export default function NewEvaluationPage() {
     const riskLevel = avg >= 3 ? "Alto" : avg >= 2 ? "Moderado" : "Bajo";
 
     setResultPartial({ totalScore, avg, riskLevel });
-    // aquí sólo mostramos el resumen de resultados, no envíamos nada aún
     setShowResultsSummary(true);
   };
 
-  // 6. Al presionar “Guardar Resultado” (una vez que ya hay observaciones)
+  // 6. Al presionar "Guardar Resultado"
   const handleSaveResult = async () => {
     if (!resultPartial) return;
 
@@ -194,7 +215,6 @@ export default function NewEvaluationPage() {
     }
 
     try {
-      // Obtener el empleadoID de las cookies
       const userCookie = Cookies.get("user");
       if (!userCookie) {
         router.push("/login");
@@ -202,16 +222,20 @@ export default function NewEvaluationPage() {
       }
       const user = JSON.parse(userCookie);
       const empleadoId = user.EmpleadoID;
+      const sessionId = parseInt(pacienteId || "0");
 
-      // Enviar TODO al backend: puntuaciones + observaciones
+      // 1. Guardar el resultado primero
       await axios.post("https://localhost:7032/api/Resultado", {
-        SesionID: parseInt(pacienteId || "0"),
+        SesionID: sessionId,
         PuntuacionTotal: resultPartial.totalScore,
         PuntuacionCorte: Math.round(resultPartial.avg),
         RiesgoAutismo: resultPartial.riskLevel,
         Observaciones: manualObservations,
         FechaCalculo: new Date().toISOString(),
       });
+
+      // 2. Actualizar el estado de la sesión
+      await updateSessionStatus(sessionId);
 
       setSaved(true);
     } catch (err) {
@@ -294,7 +318,7 @@ export default function NewEvaluationPage() {
     );
   }
 
-  // 10. Mostrar sólo el resumen de resultados con botón “Agregar Observaciones”
+  // 10. Mostrar sólo el resumen de resultados con botón "Agregar Observaciones"
   if (showResultsSummary && !showObservationsForm && !saved && resultPartial) {
     return (
       <div className="min-h-screen bg-gray-50">

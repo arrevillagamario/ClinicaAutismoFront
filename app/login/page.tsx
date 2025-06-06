@@ -47,7 +47,6 @@ export default function LoginPage() {
       );
 
       if (response.data) {
-        console.log(response);
         Cookies.set(
           "user",
           JSON.stringify({
@@ -55,13 +54,20 @@ export default function LoginPage() {
             Nombre: response.data.nombre,
             Apellido: response.data.apellido,
             Email: response.data.email,
-            Rol: response.data.rol.rolId,
+            Rol: response.data.rol, // Asegúrate de guardar el objeto rol completo
           }),
           { expires: 1 }
-        ); // Expira en 1 día
+        );
 
-        // Redirigir al dashboard
-        router.push("/dashboard");
+        // Redirección según el rol
+        const rol = response.data.rol.rol; // Por ejemplo: "Especialista", "Paciente", etc.
+        if (rol === "Especialista") {
+          router.push("/dashboard/especialistaDash");
+        } else if (rol === "Paciente") {
+          router.push("/dashboard/paciente");
+        } else {
+          router.push("/dashboard");
+        }
       }
     } catch (err) {
       if (axios.isAxiosError(err)) {
