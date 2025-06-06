@@ -1,88 +1,247 @@
-"use client"
+// app/dashboard/NewEvaluationPage.tsx
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Label } from "@/components/ui/label"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Progress } from "@/components/ui/progress"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { ArrowLeft, Heart, ArrowRight, CheckCircle } from "lucide-react"
+"use client";
+
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Progress } from "@/components/ui/progress";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { ArrowLeft, Heart, ArrowRight, CheckCircle } from "lucide-react";
+import axios from "axios";
+import Cookies from "js-cookie";
 
 // Preguntas de evaluación
 const mchatQuestions = [
-  { id: 1, question: "¿Cómo se relaciona el niño con otras personas (niños o adultos)?" },
-  { id: 2, question: "¿Imita el niño los gestos, sonidos o acciones de otras personas?" },
-  { id: 3, question: "¿Cómo expresa el niño sus emociones (alegría, tristeza, enojo, etc.)?" },
-  { id: 4, question: "¿Cómo usa el niño su cuerpo? ¿Muestra movimientos repetitivos o inusuales?" },
-  { id: 5, question: "¿Cómo interactúa el niño con objetos o juguetes? ¿Los usa de forma funcional?" },
-  { id: 6, question: "¿Cómo reacciona el niño ante cambios en su rutina o entorno?" },
-  { id: 7, question: "¿Cómo responde el niño a estímulos visuales (miradas, luces, movimientos)?" },
-  { id: 8, question: "¿Cómo reacciona el niño a sonidos o voces? ¿Parece escuchar normalmente?" },
-  { id: 9, question: "¿Cómo responde a estímulos del tacto, olfato o gusto? ¿Tiene reacciones exageradas o poco comunes?" },
-  { id: 10, question: "¿El niño muestra miedo o ansiedad? ¿Reacciona de forma inusual ante situaciones peligrosas o nuevas?" },
-  { id: 11, question: "¿Cómo se comunica verbalmente el niño? ¿Habla con claridad o usa palabras apropiadas para su edad?" },
-  { id: 12, question: "¿Cómo utiliza el lenguaje no verbal (gestos, expresiones faciales, posturas)?" },
-  { id: 13, question: "¿Cuál es el nivel de actividad del niño? ¿Es muy inquieto o demasiado pasivo?" },
-  { id: 14, question: "¿Cómo es el rendimiento intelectual del niño comparado con otros de su edad?" },
-  { id: 15, question: "En general, ¿cuán evidentes son los signos de autismo en el comportamiento del niño?" }
-]
+  {
+    id: 1,
+    question:
+      "¿Cómo se relaciona el niño con otras personas (niños o adultos)?",
+  },
+  {
+    id: 2,
+    question:
+      "¿Imita el niño los gestos, sonidos o acciones de otras personas?",
+  },
+  {
+    id: 3,
+    question:
+      "¿Cómo expresa el niño sus emociones (alegría, tristeza, enojo, etc.)?",
+  },
+  {
+    id: 4,
+    question:
+      "¿Cómo usa el niño su cuerpo? ¿Muestra movimientos repetitivos o inusuales?",
+  },
+  {
+    id: 5,
+    question:
+      "¿Cómo interactúa el niño con objetos o juguetes? ¿Los usa de forma funcional?",
+  },
+  {
+    id: 6,
+    question: "¿Cómo reacciona el niño ante cambios en su rutina o entorno?",
+  },
+  {
+    id: 7,
+    question:
+      "¿Cómo responde el niño a estímulos visuales (miradas, luces, movimientos)?",
+  },
+  {
+    id: 8,
+    question:
+      "¿Cómo reacciona el niño a sonidos o voces? ¿Parece escuchar normalmente?",
+  },
+  {
+    id: 9,
+    question:
+      "¿Cómo responde a estímulos del tacto, olfato o gusto? ¿Tiene reacciones exageradas o poco comunes?",
+  },
+  {
+    id: 10,
+    question:
+      "¿El niño muestra miedo o ansiedad? ¿Reacciona de forma inusual ante situaciones peligrosas o nuevas?",
+  },
+  {
+    id: 11,
+    question:
+      "¿Cómo se comunica verbalmente el niño? ¿Habla con claridad o usa palabras apropiadas para su edad?",
+  },
+  {
+    id: 12,
+    question:
+      "¿Cómo utiliza el lenguaje no verbal (gestos, expresiones faciales, posturas)?",
+  },
+  {
+    id: 13,
+    question:
+      "¿Cuál es el nivel de actividad del niño? ¿Es muy inquieto o demasiado pasivo?",
+  },
+  {
+    id: 14,
+    question:
+      "¿Cómo es el rendimiento intelectual del niño comparado con otros de su edad?",
+  },
+  {
+    id: 15,
+    question:
+      "En general, ¿cuán evidentes son los signos de autismo en el comportamiento del niño?",
+  },
+];
 
 export default function NewEvaluationPage() {
-  const router = useRouter()
-  const [selectedPatient, setSelectedPatient] = useState("")
-  const [selectedTest, setSelectedTest] = useState("")
-  const [currentQuestion, setCurrentQuestion] = useState(0)
-  const [answers, setAnswers] = useState<{ [key: number]: string }>({})
-  const [showResults, setShowResults] = useState(false)
-  const [result, setResult] = useState<{ totalScore: number; avg: number; riskLevel: string } | null>(null)
-  const [evaluationStarted, setEvaluationStarted] = useState(false)
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const pacienteId = searchParams.get("pacienteId");
 
-  const patients = [
-    { id: 1, name: "Ana García López", age: "2 años 3 meses" },
-    { id: 2, name: "Carlos Martín Ruiz", age: "1 año 8 meses" },
-    { id: 3, name: "Sofía Rodríguez", age: "3 años 1 mes" }
-  ]
+  const [currentQuestion, setCurrentQuestion] = useState(0);
+  const [answers, setAnswers] = useState<{ [key: number]: string }>({});
+  const [showResultsSummary, setShowResultsSummary] = useState(false);
+  const [showObservationsForm, setShowObservationsForm] = useState(false);
+  const [resultPartial, setResultPartial] = useState<{
+    totalScore: number;
+    avg: number;
+    riskLevel: string;
+  } | null>(null);
+  const [manualObservations, setManualObservations] = useState("");
+  const [saved, setSaved] = useState(false);
 
-  const tests = [
-    { id: "generalEval", name: "Evaluación General", description: "Cuestionario conductual" }
-  ]
+  const [patientData, setPatientData] = useState<{
+    nombre: string;
+    apellido: string;
+  } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const handleStartEvaluation = () => {
-    if (selectedPatient && selectedTest) setEvaluationStarted(true)
-  }
+  // 1. Traer datos del paciente al montar
+  useEffect(() => {
+    if (!pacienteId) {
+      setError("No se ha especificado un paciente");
+      setLoading(false);
+      return;
+    }
 
+    const fetchPatientData = async () => {
+      try {
+        const response = await axios.get(
+          `https://localhost:7032/api/paciente/${pacienteId}`
+        );
+        setPatientData({
+          nombre: response.data.nombre,
+          apellido: response.data.apellido,
+        });
+      } catch (err) {
+        console.error("Error al cargar datos del paciente:", err);
+        setError("Error al cargar datos del paciente");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPatientData();
+  }, [pacienteId]);
+
+  // 2. Manejo de respuestas
   const handleAnswer = (questionId: number, value: string) => {
-    setAnswers(prev => ({ ...prev, [questionId]: value }))
-  }
+    setAnswers((prev) => ({ ...prev, [questionId]: value }));
+  };
 
+  // 3. Al hacer clic “Siguiente” o “Finalizar”
   const handleNextQuestion = () => {
     if (currentQuestion < mchatQuestions.length - 1) {
-      setCurrentQuestion(q => q + 1)
+      setCurrentQuestion((q) => q + 1);
     } else {
-      calculateResults()
+      calculateResults();
     }
-  }
+  };
 
+  // 4. “Anterior”
   const handlePreviousQuestion = () => {
-    if (currentQuestion > 0) setCurrentQuestion(q => q - 1)
-  }
+    if (currentQuestion > 0) setCurrentQuestion((q) => q - 1);
+  };
 
+  // 5. Calcular puntuaciones
   const calculateResults = () => {
-    const totalScore = Object.values(answers).reduce((sum, val) => sum + parseInt(val, 10), 0)
-    const avg = totalScore / mchatQuestions.length
-    const riskLevel = avg >= 3 ? "Alto" : avg >= 2 ? "Moderado" : "Bajo"
-    setResult({ totalScore, avg, riskLevel })
-    setShowResults(true)
+    const totalScore = Object.values(answers).reduce(
+      (sum, val) => sum + parseInt(val, 10),
+      0
+    );
+    const avg = totalScore / mchatQuestions.length;
+    const riskLevel = avg >= 3 ? "Alto" : avg >= 2 ? "Moderado" : "Bajo";
+
+    setResultPartial({ totalScore, avg, riskLevel });
+    // aquí sólo mostramos el resumen de resultados, no envíamos nada aún
+    setShowResultsSummary(true);
+  };
+
+  // 6. Al presionar “Guardar Resultado” (una vez que ya hay observaciones)
+  const handleSaveResult = async () => {
+    if (!resultPartial) return;
+
+    if (!manualObservations.trim()) {
+      alert("Por favor ingresa las observaciones antes de guardar.");
+      return;
+    }
+
+    try {
+      // Obtener el empleadoID de las cookies
+      const userCookie = Cookies.get("user");
+      if (!userCookie) {
+        router.push("/login");
+        return;
+      }
+      const user = JSON.parse(userCookie);
+      const empleadoId = user.EmpleadoID;
+
+      // Enviar TODO al backend: puntuaciones + observaciones
+      await axios.post("https://localhost:7032/api/Resultado", {
+        SesionID: parseInt(pacienteId || "0"),
+        PuntuacionTotal: resultPartial.totalScore,
+        PuntuacionCorte: Math.round(resultPartial.avg),
+        RiesgoAutismo: resultPartial.riskLevel,
+        Observaciones: manualObservations,
+        FechaCalculo: new Date().toISOString(),
+      });
+
+      setSaved(true);
+    } catch (err) {
+      console.error("Error al guardar resultado:", err);
+      setError("Error al guardar los resultados");
+    }
+  };
+
+  // 7. Si está cargando datos del paciente
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div>Cargando datos del paciente...</div>
+      </div>
+    );
   }
 
-  const progress = ((currentQuestion + 1) / mchatQuestions.length) * 100
-  const currentQ = mchatQuestions[currentQuestion]
+  // 8. Si hubo algún error
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
 
-  if (showResults && result) {
+  // 9. Mostrar confirmación tras guardar definitivamente
+  if (showResultsSummary && saved && resultPartial) {
     return (
       <div className="min-h-screen bg-gray-50">
         <header className="bg-white shadow-sm border-b">
@@ -99,80 +258,144 @@ export default function NewEvaluationPage() {
               <div className="mb-4">
                 <CheckCircle className="text-green-600 w-12 h-12 mx-auto" />
               </div>
-              <CardTitle className="text-2xl">Evaluación Completada</CardTitle>
+              <CardTitle className="text-2xl">Resultado Guardado</CardTitle>
+              <CardDescription>
+                Paciente: {patientData?.nombre} {patientData?.apellido}
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <p className="text-lg">Puntuación Total: <strong>{result.totalScore}</strong></p>
-              <p className="text-lg">Promedio: <strong>{result.avg.toFixed(2)}</strong></p>
+              <p className="text-lg">
+                Puntuación Total: <strong>{resultPartial.totalScore}</strong>
+              </p>
+              <p className="text-lg">
+                Promedio: <strong>{resultPartial.avg.toFixed(2)}</strong>
+              </p>
               <Alert>
                 <AlertDescription>
-                  Nivel de Riesgo: <strong>{result.riskLevel}</strong>
+                  Nivel de Riesgo: <strong>{resultPartial.riskLevel}</strong>
                 </AlertDescription>
               </Alert>
-              <Button className="mt-4" onClick={() => router.push("/dashboard")}>Volver al Dashboard</Button>
+              <div className="text-left bg-gray-50 border rounded-md p-4">
+                <h3 className="font-medium mb-2">Observaciones:</h3>
+                <pre className="text-sm text-gray-700 overflow-x-auto">
+                  {manualObservations}
+                </pre>
+              </div>
+              <Button
+                className="mt-4"
+                onClick={() => router.push("/dashboard")}
+              >
+                Volver al Dashboard
+              </Button>
             </CardContent>
           </Card>
         </div>
       </div>
-    )
+    );
   }
 
-  if (!evaluationStarted) {
+  // 10. Mostrar sólo el resumen de resultados con botón “Agregar Observaciones”
+  if (showResultsSummary && !showObservationsForm && !saved && resultPartial) {
     return (
       <div className="min-h-screen bg-gray-50">
         <header className="bg-white shadow-sm border-b">
-          <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+          <div className="max-w-7xl mx-auto px-4 py-4 flex items-center">
             <Link href="/dashboard" className="flex items-center space-x-2">
               <Heart className="h-8 w-8 text-teal-600" />
               <span className="text-xl font-bold">AutismoCare</span>
             </Link>
-            <Button variant="ghost" asChild>
-              <Link href="/dashboard" className="flex items-center space-x-1">
-                <ArrowLeft className="w-4 h-4" />
-                <span>Volver</span>
-              </Link>
-            </Button>
           </div>
         </header>
-        <div className="max-w-2xl mx-auto px-4 py-8 space-y-6">
-          <h1 className="text-3xl font-bold">Nueva Evaluación</h1>
+        <div className="max-w-2xl mx-auto px-4 py-8">
           <Card>
             <CardHeader>
-              <CardTitle>Seleccionar Paciente</CardTitle>
+              <CardTitle className="text-2xl">Resultados Parciales</CardTitle>
+              <CardDescription>
+                Paciente: {patientData?.nombre} {patientData?.apellido}
+              </CardDescription>
             </CardHeader>
-            <CardContent>
-              <Select value={selectedPatient} onValueChange={setSelectedPatient}>
-                <SelectTrigger><SelectValue placeholder="Paciente" /></SelectTrigger>
-                <SelectContent>
-                  {patients.map(p => (
-                    <SelectItem key={p.id} value={p.id.toString()}>{p.name} ({p.age})</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <CardContent className="space-y-4">
+              <p className="text-lg">
+                Puntuación Total: <strong>{resultPartial.totalScore}</strong>
+              </p>
+              <p className="text-lg">
+                Promedio: <strong>{resultPartial.avg.toFixed(2)}</strong>
+              </p>
+              <Alert>
+                <AlertDescription>
+                  Nivel de Riesgo: <strong>{resultPartial.riskLevel}</strong>
+                </AlertDescription>
+              </Alert>
+
+              <div className="flex justify-end mt-6">
+                <Button
+                  onClick={() => setShowObservationsForm(true)}
+                  className="bg-teal-600 hover:bg-teal-700"
+                >
+                  Agregar Observaciones
+                </Button>
+              </div>
             </CardContent>
           </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Tipo de Evaluación</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {tests.map(test => (
-                <div key={test.id} className={`p-3 border rounded cursor-pointer ${selectedTest === test.id ? "border-teal-500 bg-teal-50" : "border-gray-200"}`} onClick={() => setSelectedTest(test.id)}>
-                  <p className="font-semibold">{test.name}</p>
-                  <p className="text-sm">{test.description}</p>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-          <div className="text-right">
-            <Button className="bg-teal-600 hover:bg-teal-700" onClick={handleStartEvaluation} disabled={!selectedPatient || !selectedTest}>
-              Iniciar Evaluación
-            </Button>
-          </div>
         </div>
       </div>
-    )
+    );
   }
+
+  // 11. Mostrar formulario de observaciones (luego de ver el resumen)
+  if (showResultsSummary && showObservationsForm && !saved && resultPartial) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <header className="bg-white shadow-sm border-b">
+          <div className="max-w-7xl mx-auto px-4 py-4 flex items-center">
+            <Link href="/dashboard" className="flex items-center space-x-2">
+              <Heart className="h-8 w-8 text-teal-600" />
+              <span className="text-xl font-bold">AutismoCare</span>
+            </Link>
+          </div>
+        </header>
+        <div className="max-w-2xl mx-auto px-4 py-8">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-2xl">Agregar Observaciones</CardTitle>
+              <CardDescription>
+                Paciente: {patientData?.nombre} {patientData?.apellido}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>Observaciones:</Label>
+                <textarea
+                  placeholder="Ingrese observaciones manualmente..."
+                  className="w-full border rounded-md px-2 py-1 text-sm resize-none h-28 focus:outline-none focus:ring-2 focus:ring-teal-400"
+                  value={manualObservations}
+                  onChange={(e) => setManualObservations(e.target.value)}
+                />
+              </div>
+              <div className="flex justify-end space-x-2 mt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowObservationsForm(false)}
+                >
+                  Volver
+                </Button>
+                <Button
+                  className="bg-teal-600 hover:bg-teal-700"
+                  onClick={handleSaveResult}
+                >
+                  Guardar Resultado
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  // 12. Mostrar preguntas del M-CHAT mientras no se hayan finalizado
+  const progress = ((currentQuestion + 1) / mchatQuestions.length) * 100;
+  const currentQ = mchatQuestions[currentQuestion];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -182,7 +405,13 @@ export default function NewEvaluationPage() {
             <Heart className="w-8 h-8 text-teal-600" />
             <span className="text-xl font-bold">AutismoCare</span>
           </Link>
-          <div className="text-sm text-gray-600">Pregunta {currentQuestion + 1} de {mchatQuestions.length}</div>
+          <div className="text-sm text-gray-600">
+            {patientData && (
+              <span>
+                Paciente: {patientData.nombre} {patientData.apellido}
+              </span>
+            )}
+          </div>
         </div>
       </header>
       <div className="max-w-2xl mx-auto px-4 py-8">
@@ -190,26 +419,62 @@ export default function NewEvaluationPage() {
         <Card>
           <CardHeader>
             <CardTitle>Pregunta {currentQuestion + 1}</CardTitle>
+            <CardDescription>M-CHAT-R/F</CardDescription>
           </CardHeader>
           <CardContent>
             <p className="mb-6 text-lg">{currentQ.question}</p>
-            <RadioGroup value={answers[currentQ.id] || ""} onValueChange={(v) => handleAnswer(currentQ.id, v)}>
-              {[1,2,3,4].map(n => (
-                <div key={n} className="flex items-center mb-2 space-x-2">
-                  <RadioGroupItem value={n.toString()} id={`opt-${currentQ.id}-${n}`} />
-                  <Label htmlFor={`opt-${currentQ.id}-${n}`}>{n}</Label>
+            <RadioGroup
+              value={answers[currentQ.id] || ""}
+              onValueChange={(v) => handleAnswer(currentQ.id, v)}
+            >
+              <div className="space-y-3">
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="1" id={`opt-${currentQ.id}-1`} />
+                  <Label htmlFor={`opt-${currentQ.id}-1`}>
+                    1 - Nunca o casi nunca
+                  </Label>
                 </div>
-              ))}
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="2" id={`opt-${currentQ.id}-2`} />
+                  <Label htmlFor={`opt-${currentQ.id}-2`}>
+                    2 - Algunas veces
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="3" id={`opt-${currentQ.id}-3`} />
+                  <Label htmlFor={`opt-${currentQ.id}-3`}>
+                    3 - Con frecuencia
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="4" id={`opt-${currentQ.id}-4`} />
+                  <Label htmlFor={`opt-${currentQ.id}-4`}>
+                    4 - Siempre o casi siempre
+                  </Label>
+                </div>
+              </div>
             </RadioGroup>
             <div className="flex justify-between mt-6">
-              <Button variant="outline" onClick={handlePreviousQuestion} disabled={currentQuestion === 0}>Anterior</Button>
-              <Button onClick={handleNextQuestion} disabled={!answers[currentQ.id]}>
-                {currentQuestion === mchatQuestions.length - 1 ? "Finalizar" : "Siguiente"} <ArrowRight className="w-4 h-4 ml-1" />
+              <Button
+                variant="outline"
+                onClick={handlePreviousQuestion}
+                disabled={currentQuestion === 0}
+              >
+                <ArrowLeft className="w-4 h-4 mr-1" /> Anterior
+              </Button>
+              <Button
+                onClick={handleNextQuestion}
+                disabled={!answers[currentQ.id]}
+              >
+                {currentQuestion === mchatQuestions.length - 1
+                  ? "Finalizar"
+                  : "Siguiente"}
+                <ArrowRight className="w-4 h-4 ml-1" />
               </Button>
             </div>
           </CardContent>
         </Card>
       </div>
     </div>
-  )
+  );
 }

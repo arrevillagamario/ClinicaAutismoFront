@@ -56,12 +56,15 @@ export default function NewPatientPage() {
     setError("");
 
     try {
-      // 1. Verificar autenticación
+      // 1. Verificar autenticación y obtener datos del empleado
       const userCookie = Cookies.get("user");
       if (!userCookie) {
         router.push("/login");
         return;
       }
+
+      const user = JSON.parse(userCookie);
+      const empleadoId = user.EmpleadoID;
 
       // 2. Crear primero el tutor
       const tutorResponse = await axios.post(
@@ -70,7 +73,7 @@ export default function NewPatientPage() {
           nombre: tutorData.nombre,
           apellido: tutorData.apellido,
           telefono: tutorData.telefono,
-          email: tutorData.email || null, // Envía null si está vacío
+          email: tutorData.email || null,
           parentesco: tutorData.parentesco,
         }
       );
@@ -82,13 +85,31 @@ export default function NewPatientPage() {
       const tutorId = tutorResponse.data.tutorID;
 
       // 3. Crear el paciente con el tutorID
-      await axios.post("https://localhost:7032/api/paciente", {
+      const pacienteResponse = await axios.post(
+        "https://localhost:7032/api/paciente",
+        {
+          tutorID: tutorId,
+          nombre: patientData.nombre,
+          apellido: patientData.apellido,
+          fechaNacimiento: patientData.fechaNacimiento,
+          genero: patientData.genero || null,
+          observaciones: patientData.observaciones || null,
+        }
+      );
+
+      if (!pacienteResponse.data?.pacienteID) {
+        throw new Error("No se pudo obtener el ID del paciente creado");
+      }
+
+      const pacienteId = pacienteResponse.data.pacienteID;
+
+      // 4. Crear la evaluación asociada
+      await axios.post("https://localhost:7032/api/evaluaciones", {
+        pacienteID: pacienteId,
         tutorID: tutorId,
-        nombre: patientData.nombre,
-        apellido: patientData.apellido,
-        fechaNacimiento: patientData.fechaNacimiento,
-        genero: patientData.genero || null, // Envía null si está vacío
-        observaciones: patientData.observaciones || null, // Envía null si está vacío
+        empleadoID: empleadoId,
+        testID: 1, // Asumiendo que el test por defecto tiene ID 1
+        estado: "pendiente",
       });
 
       setSuccess(true);
@@ -107,6 +128,7 @@ export default function NewPatientPage() {
     }
   };
 
+  // ... (resto del componente permanece igual)
   if (success) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -116,10 +138,10 @@ export default function NewPatientPage() {
               <Save className="h-8 w-8 text-green-600" />
             </div>
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              ¡Paciente Registrado!
+              ¡Registro Completo!
             </h3>
             <p className="text-gray-600">
-              El paciente y tutor han sido registrados exitosamente.
+              Paciente, tutor y evaluación inicial creados exitosamente.
             </p>
           </CardContent>
         </Card>

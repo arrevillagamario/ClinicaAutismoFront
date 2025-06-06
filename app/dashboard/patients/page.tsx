@@ -1,100 +1,151 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { ArrowLeft, Heart, Search, UserPlus, Eye, Calendar, FileText } from "lucide-react"
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  ArrowLeft,
+  Heart,
+  Search,
+  UserPlus,
+  Eye,
+  Calendar,
+  FileText,
+} from "lucide-react";
+import axios from "axios";
+import Cookies from "js-cookie";
+
+interface PacienteEstadoEvaluacionDto {
+  sesionID: number;
+  pacienteID: number;
+  nombre: string;
+  apellido: string;
+  genero: string | null;
+  fechaNacimiento: string;
+  fechaRegistro: string | null;
+  tutorID: number;
+  tutorNombre: string;
+  tutorApellido: string;
+  estadoSesion: string | null;
+}
 
 export default function PatientsPage() {
-  const [searchTerm, setSearchTerm] = useState("")
+  const [searchTerm, setSearchTerm] = useState("");
+  const [patients, setPatients] = useState<PacienteEstadoEvaluacionDto[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  // Datos simulados de pacientes
-  const patients = [
-    {
-      id: 1,
-      nombre: "Ana García",
-      apellido: "López",
-      edad: "2 años 3 meses",
-      tutor: "María López",
-      telefono: "+34 666 123 456",
-      ultimaEvaluacion: "2024-01-15",
-      estado: "Evaluado",
-      riesgo: "Bajo",
-    },
-    {
-      id: 2,
-      nombre: "Carlos Martín",
-      apellido: "Ruiz",
-      edad: "1 año 8 meses",
-      tutor: "Juan Martín",
-      telefono: "+34 666 789 012",
-      ultimaEvaluacion: "2024-01-10",
-      estado: "Pendiente Diagnóstico",
-      riesgo: "Alto",
-    },
-    {
-      id: 3,
-      nombre: "Sofía Rodríguez",
-      apellido: "Pérez",
-      edad: "3 años 1 mes",
-      tutor: "Carmen Rodríguez",
-      telefono: "+34 666 345 678",
-      ultimaEvaluacion: "2024-01-08",
-      estado: "Diagnosticado",
-      riesgo: "Moderado",
-    },
-    {
-      id: 4,
-      nombre: "Miguel Fernández",
-      apellido: "Torres",
-      edad: "2 años 6 meses",
-      tutor: "Ana Torres",
-      telefono: "+34 666 901 234",
-      ultimaEvaluacion: null,
-      estado: "Sin Evaluar",
-      riesgo: null,
-    },
-  ]
+  useEffect(() => {
+    const fetchPatients = async () => {
+      try {
+        const response = await axios.get(
+          "https://localhost:7032/api/paciente/pacientes-sesion"
+        );
+        setPatients(response.data);
+      } catch (error) {
+        console.error("Error fetching patients:", error);
+        setError("Error al cargar los pacientes");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPatients();
+  }, []);
 
   const filteredPatients = patients.filter(
     (patient) =>
       patient.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
       patient.apellido.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      patient.tutor.toLowerCase().includes(searchTerm.toLowerCase()),
-  )
+      patient.tutorNombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      patient.tutorApellido.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
-  const getStatusBadge = (estado: string) => {
-    switch (estado) {
-      case "Evaluado":
-        return <Badge variant="secondary">Evaluado</Badge>
-      case "Pendiente Diagnóstico":
-        return <Badge className="bg-orange-100 text-orange-800">Pendiente Diagnóstico</Badge>
-      case "Diagnosticado":
-        return <Badge className="bg-green-100 text-green-800">Diagnosticado</Badge>
-      case "Sin Evaluar":
-        return <Badge variant="outline">Sin Evaluar</Badge>
-      default:
-        return <Badge variant="outline">{estado}</Badge>
+  const calculateAge = (fechaNacimiento: string) => {
+    const birthDate = new Date(fechaNacimiento);
+    const today = new Date();
+    let years = today.getFullYear() - birthDate.getFullYear();
+    let months = today.getMonth() - birthDate.getMonth();
+
+    if (months < 0 || (months === 0 && today.getDate() < birthDate.getDate())) {
+      years--;
+      months += 12;
     }
+
+    return `${years} años ${months} meses`;
+  };
+
+  const getStatusBadge = (estado: string | null) => {
+    if (!estado) return <Badge variant="outline">Sin Evaluar</Badge>;
+
+    switch (estado.toLowerCase()) {
+      case "evaluado":
+        return <Badge variant="secondary">Evaluado</Badge>;
+      case "pendiente":
+        return (
+          <Badge className="bg-orange-100 text-orange-800">Pendiente</Badge>
+        );
+      case "completado":
+        return (
+          <Badge className="bg-green-100 text-green-800">Completado</Badge>
+        );
+      case "diagnosticado":
+        return (
+          <Badge className="bg-blue-100 text-blue-800">Diagnosticado</Badge>
+        );
+      default:
+        return <Badge variant="outline">{estado}</Badge>;
+    }
+  };
+
+  const getRiskBadge = (estado: string | null) => {
+    if (!estado) return null;
+
+    switch (estado.toLowerCase()) {
+      case "alto":
+        return <Badge className="bg-red-100 text-red-800">Alto</Badge>;
+      case "moderado":
+        return (
+          <Badge className="bg-orange-100 text-orange-800">Moderado</Badge>
+        );
+      case "bajo":
+        return <Badge className="bg-green-100 text-green-800">Bajo</Badge>;
+      default:
+        return <Badge variant="outline">{estado}</Badge>;
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div>Cargando pacientes...</div>
+      </div>
+    );
   }
 
-  const getRiskBadge = (riesgo: string | null) => {
-    if (!riesgo) return null
-
-    switch (riesgo) {
-      case "Alto":
-        return <Badge className="bg-red-100 text-red-800">Alto</Badge>
-      case "Moderado":
-        return <Badge className="bg-orange-100 text-orange-800">Moderado</Badge>
-      case "Bajo":
-        return <Badge className="bg-green-100 text-green-800">Bajo</Badge>
-      default:
-        return <Badge variant="outline">{riesgo}</Badge>
-    }
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-red-500">{error}</div>
+      </div>
+    );
   }
 
   return (
@@ -106,7 +157,9 @@ export default function PatientsPage() {
             <div className="flex items-center space-x-4">
               <Link href="/dashboard" className="flex items-center space-x-2">
                 <Heart className="h-8 w-8 text-teal-600" />
-                <span className="text-xl font-bold text-gray-900">AutismoCare</span>
+                <span className="text-xl font-bold text-gray-900">
+                  AutismoCare
+                </span>
               </Link>
             </div>
             <Button variant="ghost" asChild>
@@ -123,11 +176,18 @@ export default function PatientsPage() {
         {/* Header Section */}
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Gestión de Pacientes</h1>
-            <p className="text-gray-600 mt-2">Lista completa de pacientes registrados</p>
+            <h1 className="text-3xl font-bold text-gray-900">
+              Gestión de Pacientes
+            </h1>
+            <p className="text-gray-600 mt-2">
+              Lista completa de pacientes registrados
+            </p>
           </div>
           <Button asChild className="bg-teal-600 hover:bg-teal-700">
-            <Link href="/dashboard/patients/new" className="flex items-center space-x-2">
+            <Link
+              href="/dashboard/patients/new"
+              className="flex items-center space-x-2"
+            >
               <UserPlus className="h-4 w-4" />
               <span>Nuevo Paciente</span>
             </Link>
@@ -140,8 +200,12 @@ export default function PatientsPage() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Total Pacientes</p>
-                  <p className="text-3xl font-bold text-gray-900">{patients.length}</p>
+                  <p className="text-sm font-medium text-gray-600">
+                    Total Pacientes
+                  </p>
+                  <p className="text-3xl font-bold text-gray-900">
+                    {patients.length}
+                  </p>
                 </div>
                 <div className="p-3 bg-blue-100 rounded-full">
                   <UserPlus className="h-6 w-6 text-blue-600" />
@@ -154,9 +218,11 @@ export default function PatientsPage() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Sin Evaluar</p>
+                  <p className="text-sm font-medium text-gray-600">
+                    Sin Evaluar
+                  </p>
                   <p className="text-3xl font-bold text-gray-900">
-                    {patients.filter((p) => p.estado === "Sin Evaluar").length}
+                    {patients.filter((p) => !p.estadoSesion).length}
                   </p>
                 </div>
                 <div className="p-3 bg-orange-100 rounded-full">
@@ -170,9 +236,15 @@ export default function PatientsPage() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Pendiente Diagnóstico</p>
+                  <p className="text-sm font-medium text-gray-600">
+                    Pendientes
+                  </p>
                   <p className="text-3xl font-bold text-gray-900">
-                    {patients.filter((p) => p.estado === "Pendiente Diagnóstico").length}
+                    {
+                      patients.filter(
+                        (p) => p.estadoSesion?.toLowerCase() === "pendiente"
+                      ).length
+                    }
                   </p>
                 </div>
                 <div className="p-3 bg-yellow-100 rounded-full">
@@ -186,9 +258,15 @@ export default function PatientsPage() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Diagnosticados</p>
+                  <p className="text-sm font-medium text-gray-600">
+                    Completados
+                  </p>
                   <p className="text-3xl font-bold text-gray-900">
-                    {patients.filter((p) => p.estado === "Diagnosticado").length}
+                    {
+                      patients.filter(
+                        (p) => p.estadoSesion?.toLowerCase() === "completado"
+                      ).length
+                    }
                   </p>
                 </div>
                 <div className="p-3 bg-green-100 rounded-full">
@@ -203,7 +281,9 @@ export default function PatientsPage() {
         <Card className="mb-6">
           <CardHeader>
             <CardTitle>Buscar Pacientes</CardTitle>
-            <CardDescription>Filtre por nombre del paciente o tutor</CardDescription>
+            <CardDescription>
+              Filtre por nombre del paciente o tutor
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="relative">
@@ -223,7 +303,8 @@ export default function PatientsPage() {
           <CardHeader>
             <CardTitle>Lista de Pacientes</CardTitle>
             <CardDescription>
-              {filteredPatients.length} paciente{filteredPatients.length !== 1 ? "s" : ""} encontrado
+              {filteredPatients.length} paciente
+              {filteredPatients.length !== 1 ? "s" : ""} encontrado
               {filteredPatients.length !== 1 ? "s" : ""}
             </CardDescription>
           </CardHeader>
@@ -234,39 +315,54 @@ export default function PatientsPage() {
                   <TableHead>Paciente</TableHead>
                   <TableHead>Edad</TableHead>
                   <TableHead>Tutor</TableHead>
-                  <TableHead>Teléfono</TableHead>
-                  <TableHead>Última Evaluación</TableHead>
+                  <TableHead>Género</TableHead>
+                  <TableHead>Fecha Registro</TableHead>
                   <TableHead>Estado</TableHead>
-                  <TableHead>Riesgo</TableHead>
                   <TableHead>Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredPatients.map((patient) => (
-                  <TableRow key={patient.id}>
+                  <TableRow key={patient.pacienteID}>
                     <TableCell className="font-medium">
                       {patient.nombre} {patient.apellido}
                     </TableCell>
-                    <TableCell>{patient.edad}</TableCell>
-                    <TableCell>{patient.tutor}</TableCell>
-                    <TableCell>{patient.telefono}</TableCell>
                     <TableCell>
-                      {patient.ultimaEvaluacion
-                        ? new Date(patient.ultimaEvaluacion).toLocaleDateString("es-ES")
-                        : "Sin evaluar"}
+                      {calculateAge(patient.fechaNacimiento)}
                     </TableCell>
-                    <TableCell>{getStatusBadge(patient.estado)}</TableCell>
-                    <TableCell>{getRiskBadge(patient.riesgo)}</TableCell>
+                    <TableCell>
+                      {patient.tutorNombre} {patient.tutorApellido}
+                    </TableCell>
+                    <TableCell>
+                      {patient.genero === "M"
+                        ? "Masculino"
+                        : patient.genero === "F"
+                        ? "Femenino"
+                        : "No especificado"}
+                    </TableCell>
+                    <TableCell>
+                      {patient.fechaRegistro
+                        ? new Date(patient.fechaRegistro).toLocaleDateString(
+                            "es-ES"
+                          )
+                        : "N/A"}
+                    </TableCell>
+                    <TableCell>
+                      {getStatusBadge(patient.estadoSesion)}
+                    </TableCell>
                     <TableCell>
                       <div className="flex space-x-2">
-                        <Button size="sm" variant="outline" asChild>
-                          <Link href={`/dashboard/patients/${patient.id}`}>
-                            <Eye className="h-4 w-4" />
-                          </Link>
-                        </Button>
-                        {patient.estado === "Sin Evaluar" && (
-                          <Button size="sm" className="bg-teal-600 hover:bg-teal-700" asChild>
-                            <Link href="/dashboard/evaluations/new">Evaluar</Link>
+                        {patient.estadoSesion == "pendiente" && (
+                          <Button
+                            size="sm"
+                            className="bg-teal-600 hover:bg-teal-700"
+                            asChild
+                          >
+                            <Link
+                              href={`/dashboard/evaluations/new?pacienteId=${patient.pacienteID}`}
+                            >
+                              Evaluar
+                            </Link>
                           </Button>
                         )}
                       </div>
@@ -279,5 +375,5 @@ export default function PatientsPage() {
         </Card>
       </div>
     </div>
-  )
+  );
 }
