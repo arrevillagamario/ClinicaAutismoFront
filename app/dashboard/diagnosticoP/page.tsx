@@ -200,8 +200,18 @@ export default function DiagnosticoPPage() {
     }
   };
 
+  // Ordenar pacientes por ultimaEvaluacion descendente (más reciente primero)
+  const pacientesOrdenados = [...pacientes].sort((a, b) => {
+    if (!a.ultimaEvaluacion) return 1;
+    if (!b.ultimaEvaluacion) return -1;
+    return (
+      new Date(b.ultimaEvaluacion).getTime() -
+      new Date(a.ultimaEvaluacion).getTime()
+    );
+  });
+
   // Filtrado de pacientes según búsqueda
-  const pacientesFiltrados = pacientes.filter((p) => {
+  const pacientesFiltrados = pacientesOrdenados.filter((p) => {
     const texto = `${p.nombre} ${p.apellido} ${p.tutor}`.toLowerCase();
     return texto.includes(search.toLowerCase());
   });
@@ -281,7 +291,13 @@ export default function DiagnosticoPPage() {
                       <TableCell>{row.edad}</TableCell>
                       <TableCell>{row.tutor}</TableCell>
                       <TableCell>{row.telefono}</TableCell>
-
+                      <TableCell>
+                        {row.ultimaEvaluacion
+                          ? new Date(row.ultimaEvaluacion).toLocaleDateString(
+                              "es-ES"
+                            )
+                          : "N/A"}
+                      </TableCell>
                       <TableCell>{row.riesgoAutismo}</TableCell>
                       <TableCell>
                         <div className="max-h-16 overflow-y-auto text-sm text-gray-700">

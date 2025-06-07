@@ -83,7 +83,16 @@ export default function PatientsPage() {
     }
   }, []);
 
-  const filteredPatients = patients.filter(
+  // Ordena los pacientes por fechaRegistro descendente (más reciente primero)
+  const patientsSorted = [...patients].sort((a, b) => {
+    if (!a.fechaRegistro) return 1;
+    if (!b.fechaRegistro) return -1;
+    return (
+      new Date(b.fechaRegistro).getTime() - new Date(a.fechaRegistro).getTime()
+    );
+  });
+
+  const filteredPatients = patientsSorted.filter(
     (patient) =>
       patient.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
       patient.apellido.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -102,7 +111,12 @@ export default function PatientsPage() {
       months += 12;
     }
 
-    return `${years} años ${months} meses`;
+    if (years < 1) {
+      return `${months} mes${months !== 1 ? "es" : ""}`;
+    }
+    return `${years} año${years !== 1 ? "s" : ""} ${months} mes${
+      months !== 1 ? "es" : ""
+    }`;
   };
 
   const getStatusBadge = (estado: string | null) => {

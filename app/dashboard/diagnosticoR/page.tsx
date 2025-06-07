@@ -30,6 +30,8 @@ import { Search } from "lucide-react";
 // Tipo que representa un paciente ya diagnosticado, con datos de la tabla Resultados y Diagnosticos:
 interface DiagnosedPaciente {
   id: number; // ID del paciente
+  sesionID?: number;
+  resultadoId?: number; // <-- agrega esto si no existe
   nombre: string;
   apellido: string;
   edad: string;
@@ -140,7 +142,8 @@ export default function DiagnosticoRPage() {
 
             return {
               id: p.pacienteID,
-              sesionID: p.sesionID, // <-- AGREGA ESTA LÍNEA
+              sesionID: p.sesionID,
+              resultadoID: resultado.resultadoID, // <-- agrega esto
               nombre: p.nombre,
               apellido: p.apellido,
               edad: calcularEdad(p.fechaNacimiento),
@@ -166,8 +169,18 @@ export default function DiagnosticoRPage() {
     fetchRealizados();
   }, []);
 
+  // Ordenar pacientes por fechaDiagnostico descendente (más reciente primero)
+  const pacientesOrdenados = [...pacientes].sort((a, b) => {
+    if (!a.fechaDiagnostico) return 1;
+    if (!b.fechaDiagnostico) return -1;
+    return (
+      new Date(b.fechaDiagnostico).getTime() -
+      new Date(a.fechaDiagnostico).getTime()
+    );
+  });
+
   // Filtrado de pacientes según búsqueda
-  const pacientesFiltrados = pacientes.filter((p) => {
+  const pacientesFiltrados = pacientesOrdenados.filter((p) => {
     const texto = `${p.nombre} ${p.apellido} ${p.tutor}`.toLowerCase();
     return texto.includes(search.toLowerCase());
   });
@@ -196,10 +209,39 @@ export default function DiagnosticoRPage() {
     apellido: string
   ) => {
     try {
+      // Trae todos los resultados del paciente
       const res = await axios.get(
         `https://localhost:7032/api/Resultado/por-paciente/${pacienteId}`
       );
-      setHistorial(res.data || []);
+      const resultados = res.data || [];
+
+      // Para cada resultado, busca el diagnóstico correspondiente
+      const historialConDiagnostico = await Promise.all(
+        resultados.map(async (r: any) => {
+          let conclusion = "";
+          let detalles = "";
+          let fechaDiagnostico = "";
+          try {
+            // Busca diagnóstico por resultadoID
+            const diagRes = await axios.get(
+              `https://localhost:7032/api/Diagnostico/por-resultado/${r.resultadoID}`
+            );
+            conclusion = diagRes.data.conclusion || "";
+            detalles = diagRes.data.detalles || "";
+            fechaDiagnostico = diagRes.data.fechaDiagnostico || "";
+          } catch {
+            // Si no hay diagnóstico, deja vacío
+          }
+          return {
+            ...r,
+            conclusion,
+            detalles,
+            fechaDiagnostico, // <-- AGREGA ESTA LÍNEA
+          };
+        })
+      );
+
+      setHistorial(historialConDiagnostico);
       setHistorialPaciente(`${nombre} ${apellido}`);
       setModalOpen(true);
     } catch {
@@ -209,9 +251,29 @@ export default function DiagnosticoRPage() {
   };
 
   // Abrir modal de detalle
-  const handleVerDetalle = (paciente: DiagnosedPaciente) => {
-    setDetallePaciente(paciente);
-    setDetalleOpen(true);
+  const handleVerDetalle = async (paciente: DiagnosedPaciente) => {
+    try {
+      // Usa resultadoID (con mayúsculas, igual que en tu respuesta)
+      const resultadoID = (paciente as any).resultadoID;
+      let especialistaNombre = "Desconocido";
+      if (resultadoID) {
+        const diagRes = await axios.get(
+          `https://localhost:7032/api/Diagnostico/por-resultado/${resultadoID}`
+        );
+        especialistaNombre = diagRes.data.especialistaNombre || "Desconocido";
+      }
+      setDetallePaciente({
+        ...paciente,
+        especialista: especialistaNombre,
+      });
+      setDetalleOpen(true);
+    } catch {
+      setDetallePaciente({
+        ...paciente,
+        especialista: "Desconocido",
+      });
+      setDetalleOpen(true);
+    }
   };
 
   const handleVolverDashboard = () => {
@@ -224,12 +286,10 @@ export default function DiagnosticoRPage() {
     const rol = user.Rol?.rol;
 
     if (rol === "Administrador") {
-      router.push("/dashboard");
+      router.push("/dashboard/admin");
     } else if (rol === "Especialista") {
       router.push("/dashboard/especialistaDash");
     } else if (rol === "Recepcionista") {
-      router.push("/dashboard/recepcionistaDash");
-    } else {
       router.push("/dashboard");
     }
   };
@@ -295,14 +355,12 @@ export default function DiagnosticoRPage() {
                     Teléfono
                   </TableHead>
                   <TableHead className="text-black font-semibold">
-                    Última Evaluación
-                  </TableHead>
-                  <TableHead className="text-black font-semibold">
                     Riesgo Autismo
                   </TableHead>
                   <TableHead className="text-black font-semibold">
-                    Fecha Diagnóstico
+                    Última Evaluación
                   </TableHead>
+
                   <TableHead className="text-black font-semibold text-center">
                     Acciones
                   </TableHead>
@@ -422,8 +480,8 @@ export default function DiagnosticoRPage() {
                   <li key={idx} className="border-b pb-2 text-black">
                     <div>
                       <b>Fecha:</b>{" "}
-                      {h.fecha
-                        ? new Date(h.fecha).toLocaleDateString("es-ES")
+                      {h.fechaDiagnostico
+                        ? new Date(h.fechaDiagnostico).toLocaleDateString("es-ES")
                         : "N/A"}
                     </div>
                     <div>

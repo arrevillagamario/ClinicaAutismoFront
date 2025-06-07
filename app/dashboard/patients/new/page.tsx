@@ -144,6 +144,12 @@ export default function NewPatientPage() {
     }
   };
 
+  // Calcula el rango permitido para la fecha de nacimiento (0 a 6 años)
+  const today = new Date();
+  const maxDate = today.toISOString().split("T")[0];
+  const minDateObj = new Date(today.getFullYear() - 6, today.getMonth(), today.getDate());
+  const minDate = minDateObj.toISOString().split("T")[0];
+
   if (success) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -335,6 +341,8 @@ export default function NewPatientPage() {
                     id="fecha-nacimiento"
                     type="date"
                     value={patientData.fechaNacimiento}
+                    min={minDate}
+                    max={maxDate}
                     onChange={(e) =>
                       setPatientData({
                         ...patientData,

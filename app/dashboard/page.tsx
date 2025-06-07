@@ -193,6 +193,15 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Imagen debajo de la card de acciones rápidas */}
+        <div className="flex justify-center mt-4">
+          <img
+            src="/recep.png"
+            alt="Recepcionista"
+            className=" max-h-96 w-full max-w-12xl "
+          />
+        </div>
       </div>
     </div>
   );
