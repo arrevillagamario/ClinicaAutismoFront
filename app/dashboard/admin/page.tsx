@@ -160,48 +160,65 @@ export default function AdminPage() {
           </p>
         </div>
 
-        {/* Quick Actions */}
-        <div className="grid lg:grid-cols-3 gap-6 mb-8">
-          <Card className="lg:col-span-2">
-            <CardHeader>
-              <CardTitle>Acciones Rápidas</CardTitle>
-              <CardDescription>Tareas más comunes del sistema</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-4">
-                <Button
-                  asChild
-                  className="h-20 flex-col space-y-2 bg-teal-600 hover:bg-teal-700"
-                >
-                  <Link href="/dashboard/patients/new">
-                    <UserPlus className="h-6 w-6" />
-                    <span>Registrar Paciente</span>
-                  </Link>
-                </Button>
+        {/* Card de Acciones Rápidas con botones en fila */}
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle>Acciones Rápidas</CardTitle>
+            <CardDescription>Tareas más comunes del sistema</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-4 justify-center">
+              <Button
+                asChild
+                className="h-20 w-56 flex-col space-y-2 bg-teal-600 hover:bg-teal-700"
+              >
+                <Link href="/dashboard/patients/new">
+                  <UserPlus className="h-6 w-6" />
+                  <span>Registrar Paciente</span>
+                </Link>
+              </Button>
+              <Button
+                asChild
+                variant="outline"
+                className="h-20 w-56 flex-col space-y-2"
+              >
+                <Link href="/dashboard/patients">
+                  <Users className="h-6 w-6" />
+                  <span>Ver Pacientes</span>
+                </Link>
+              </Button>
+              <Button
+                asChild
+                 className="h-20 w-56 flex-col space-y-2 bg-teal-600 hover:bg-teal-700"
+               
+              >
+                <Link href="/register">
+                  <Users className="h-6 w-6" />
+                  <span>Registrar Empleados</span>
+                </Link>
+              </Button>
+              <Button
+                asChild
+      
+              variant="outline"
+                className="h-20 w-56 flex-col space-y-2"
+              >
+                <Link href="/dashboard/empleado">
+                  <ClipboardList className="h-6 w-6" />
+                  <span>Ver Empleados</span>
+                </Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
-                <Button
-                  asChild
-                  variant="outline"
-                  className="h-20 flex-col space-y-2"
-                >
-                  <Link href="/dashboard/patients">
-                    <Users className="h-6 w-6" />
-                    <span>Ver Pacientes</span>
-                  </Link>
-                </Button>
-                <Button
-                  asChild
-                  variant="outline"
-                  className="h-20 flex-col space-y-2"
-                >
-                  <Link href="/register">
-                    <Users className="h-6 w-6" />
-                    <span>Registrar Empleados</span>
-                  </Link>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+        {/* Imagen debajo del card */}
+        <div className="flex justify-center mt-4">
+          <img
+            src="/admin.png"
+            alt="Administrador"
+            className=" max-h-96 w-full max-w-3xl "
+          />
         </div>
       </div>
     </div>

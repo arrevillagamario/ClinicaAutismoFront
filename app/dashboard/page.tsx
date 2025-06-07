@@ -199,7 +199,7 @@ export default function DashboardPage() {
           <img
             src="/recep.png"
             alt="Recepcionista"
-            className=" max-h-96 w-full max-w-12xl "
+            className=" max-h-96 w-full max-w-10xl "
           />
         </div>
       </div>

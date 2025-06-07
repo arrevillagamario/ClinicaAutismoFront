@@ -31,6 +31,13 @@ import {
 } from "lucide-react";
 import axios from "axios";
 import Cookies from "js-cookie";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 interface PacienteEstadoEvaluacionDto {
   sesionID: number;
@@ -46,12 +53,24 @@ interface PacienteEstadoEvaluacionDto {
   estadoSesion: string | null;
 }
 
+interface PacienteEditDto {
+  pacienteID: number;
+  tutorID: number;
+  nombre: string;
+  apellido: string;
+  fechaNacimiento: string;
+  genero: string;
+}
+
 export default function PatientsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [patients, setPatients] = useState<PacienteEstadoEvaluacionDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [dashboardUrl, setDashboardUrl] = useState("/dashboard");
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editForm, setEditForm] = useState<PacienteEditDto | null>(null);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     const fetchPatients = async () => {
@@ -156,6 +175,51 @@ export default function PatientsPage() {
         return <Badge className="bg-green-100 text-green-800">Bajo</Badge>;
       default:
         return <Badge variant="outline">{estado}</Badge>;
+    }
+  };
+
+  // Abrir modal y precargar datos del paciente
+  const handleEditClick = (patient: PacienteEstadoEvaluacionDto) => {
+    setEditForm({
+      pacienteID: patient.pacienteID,
+      tutorID: patient.tutorID,
+      nombre: patient.nombre ?? "",
+      apellido: patient.apellido ?? "",
+      fechaNacimiento: patient.fechaNacimiento?.substring(0, 10) ?? "",
+      genero: patient.genero ?? "",
+    });
+    setEditModalOpen(true);
+  };
+
+  // Guardar cambios
+  const handleSave = async () => {
+    if (!editForm) return;
+    setSaving(true);
+    try {
+      await axios.put(
+        `https://localhost:7032/api/Paciente/${editForm.pacienteID}`,
+        {
+          pacienteID: editForm.pacienteID,
+          tutorID: editForm.tutorID,
+          nombre: editForm.nombre,
+          apellido: editForm.apellido,
+          fechaNacimiento: editForm.fechaNacimiento,
+          genero: editForm.genero,
+        }
+      );
+      // Actualiza la lista localmente
+      setPatients((prev) =>
+        prev.map((p) =>
+          p.pacienteID === editForm.pacienteID
+            ? { ...p, ...editForm }
+            : p
+        )
+      );
+      setEditModalOpen(false);
+    } catch (err) {
+      alert("Error al guardar los cambios");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -374,6 +438,13 @@ export default function PatientsPage() {
                             </Link>
                           </Button>
                         )}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleEditClick(patient)}
+                        >
+                          Editar
+                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -383,6 +454,86 @@ export default function PatientsPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Modal de edición */}
+      <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Paciente</DialogTitle>
+          </DialogHeader>
+          {editForm && (
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleSave();
+              }}
+              className="space-y-4"
+            >
+              <div>
+                <label className="block text-sm font-medium mb-1">Nombre</label>
+                <Input
+                  value={editForm.nombre}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, nombre: e.target.value })
+                  }
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Apellido</label>
+                <Input
+                  value={editForm.apellido}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, apellido: e.target.value })
+                  }
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  Fecha de Nacimiento
+                </label>
+                <Input
+                  type="date"
+                  value={editForm.fechaNacimiento}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, fechaNacimiento: e.target.value })
+                  }
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Género</label>
+                <select
+                  className="w-full border rounded px-2 py-1"
+                  value={editForm.genero}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, genero: e.target.value })
+                  }
+                  required
+                >
+                  <option value="">Seleccionar</option>
+                  <option value="M">Masculino</option>
+                  <option value="F">Femenino</option>
+                  <option value="Otro">Otro</option>
+                </select>
+              </div>
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setEditModalOpen(false)}
+                >
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={saving}>
+                  {saving ? "Guardando..." : "Guardar"}
+                </Button>
+              </DialogFooter>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
