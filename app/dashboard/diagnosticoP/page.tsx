@@ -2,10 +2,11 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Search } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -30,7 +31,8 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
-import { ArrowLeft, Eye } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
+import axios from "axios";
 
 // Tipo que representa un paciente pendiente de diagnóstico, con datos de la tabla Resultados:
 interface PendingPaciente {
@@ -46,34 +48,82 @@ interface PendingPaciente {
   observaciones: string;         // Observaciones de Resultados
 }
 
-// Ejemplo de paciente para mostrar en pantalla:
-const ejemploPaciente: PendingPaciente = {
-  id: 2,
-  nombre: "Carlos",
-  apellido: "Martín Ruiz",
-  edad: "1 año 8 meses",
-  tutor: "Juan Martín",
-  telefono: "+34 666 789 012",
-  ultimaEvaluacion: "2024-01-10",
-  resultadoId: 5,
-  riesgoAutismo: "Alto",
-  observaciones:
-    "Se detectaron comportamientos repetitivos y baja interacción social durante la última evaluación.",
-};
-
 export default function DiagnosticoPPage() {
-  // Estado inicial con el paciente de ejemplo
-  const [pacientes, setPacientes] = useState<PendingPaciente[]>([
-    ejemploPaciente,
-  ]);
-
-  // Para almacenar los inputs de "Conclusión" y "Detalles" por cada resultadoId
-  const [inputs, setInputs] = useState<{
-    [resultadoId: number]: { conclusion: string; detalles: string };
-  }>({});
-
-  // ID ficticio del especialista (en producción, lo obtendrías del contexto de sesión)
+  const [pacientes, setPacientes] = useState<PendingPaciente[]>([]);
+  const [inputs, setInputs] = useState<{ [resultadoId: number]: { conclusion: string; detalles: string } }>({});
+  const [search, setSearch] = useState("");
   const especialistaId = 1;
+
+  useEffect(() => {
+    const fetchPendientes = async () => {
+      try {
+        // 1. Traer todos los pacientes con sesión
+        const res = await axios.get("https://localhost:7032/api/Paciente/pacientes-sesion");
+        const data = res.data;
+
+        // 2. Filtrar solo los que tienen estadoSesion "completado"
+        const completados = data.filter((p: any) => p.estadoSesion === "completado");
+
+        // 3. Para cada paciente, traer resultado y teléfono del tutor
+        const pacientesData: PendingPaciente[] = (await Promise.all(
+          completados.map(async (p: any) => {
+            // Traer resultados del paciente
+            const resultadoRes = await axios.get(
+              `https://localhost:7032/api/Resultado/por-paciente/${p.pacienteID}`
+            );
+            // Tomar el resultado que coincida con la sesión actual
+            const resultado = resultadoRes.data.find((r: any) => r.sessionID === p.sessionID);
+
+            if (!resultado) return null; // <-- Solo agrega si hay resultado
+
+            // Traer teléfono del tutor (si lo necesitas)
+            let telefono = "";
+            try {
+              const tutorRes = await axios.get(
+                `https://localhost:7032/api/Tutor/${p.tutorID}`
+              );
+              telefono = tutorRes.data.telefono || "";
+            } catch {
+              telefono = "";
+            }
+
+            return {
+              id: p.pacienteID,
+              nombre: p.nombre,
+              apellido: p.apellido,
+              edad: calcularEdad(p.fechaNacimiento),
+              tutor: p.tutorNombre + " " + p.tutorApellido,
+              telefono,
+              ultimaEvaluacion: p.fechaRegistro,
+              resultadoId: resultado.resultadoID, // <-- Nunca será 0
+              riesgoAutismo: resultado.riesgoAutismo || "",
+              observaciones: resultado.observaciones || "",
+            };
+          })
+        )).filter(Boolean); // <-- Elimina los null
+
+        setPacientes(pacientesData);
+      } catch (err) {
+        console.error("Error al cargar pacientes pendientes:", err);
+      }
+    };
+
+    fetchPendientes();
+  }, []);
+
+  // Función para calcular edad desde fecha de nacimiento
+  function calcularEdad(fechaNacimiento: string) {
+    if (!fechaNacimiento) return "N/A";
+    const nacimiento = new Date(fechaNacimiento);
+    const hoy = new Date();
+    let años = hoy.getFullYear() - nacimiento.getFullYear();
+    let meses = hoy.getMonth() - nacimiento.getMonth();
+    if (meses < 0) {
+      años--;
+      meses += 12;
+    }
+    return `${años} año${años !== 1 ? "s" : ""} ${meses} mes${meses !== 1 ? "es" : ""}`;
+  }
 
   const handleInputChange = (
     resultadoId: number,
@@ -89,35 +139,60 @@ export default function DiagnosticoPPage() {
     }));
   };
 
-  const handleSave = (row: PendingPaciente) => {
+  const handleSave = async (row: PendingPaciente) => {
     const entry = inputs[row.resultadoId];
     if (!entry || !entry.conclusion.trim() || !entry.detalles.trim()) {
       alert("Debe completar tanto la conclusión como los detalles.");
       return;
     }
 
-    // Simulación de envío al API
-    const payload = {
-      resultadoId: row.resultadoId,
-      especialistaId,
-      conclusion: entry.conclusion.trim(),
-      detalles: entry.detalles.trim(),
-    };
-    console.log("Payload a enviar al API:", payload);
+    if (!row.resultadoId || !especialistaId) {
+      alert("Faltan datos requeridos para el diagnóstico.");
+      return;
+    }
 
-    // Una vez “guardado”, removemos ese paciente de la lista
-    setPacientes((prev) =>
-      prev.filter((p) => p.resultadoId !== row.resultadoId)
-    );
-    // Limpiamos inputs correspondientes
-    setInputs((prev) => {
-      const copy = { ...prev };
-      delete copy[row.resultadoId];
-      return copy;
-    });
+    try {
+      const payload = {
+        resultadoID: row.resultadoId,
+        especialistaID: especialistaId,
+        conclusion: entry.conclusion.trim(),
+        detalles: entry.detalles.trim(),
+        fechaDiagnostico: new Date().toISOString()
+      };
+      await axios.post("https://localhost:7032/api/Diagnostico", payload);
 
-    alert("Diagnóstico guardado correctamente (simulado).");
+      // PATCH para cambiar el estado de la sesión a "realizado"
+      // Debes tener el sessionId (puedes guardarlo en tu PendingPaciente)
+      // Supongamos que lo tienes como row.sessionId
+      await axios.patch(
+        `https://localhost:7032/api/Evaluaciones/${row.id}/estado`,
+        {
+          sesionID: row.id,
+          estado: "realizado",
+        }
+      );
+
+      setPacientes((prev) =>
+        prev.filter((p) => p.resultadoId !== row.resultadoId)
+      );
+      setInputs((prev) => {
+        const copy = { ...prev };
+        delete copy[row.resultadoId];
+        return copy;
+      });
+
+      alert("Diagnóstico guardado correctamente.");
+    } catch (err: any) {
+      alert("Error al guardar el diagnóstico.");
+      console.error(err?.response?.data || err);
+    }
   };
+
+  // Filtrado de pacientes según búsqueda
+  const pacientesFiltrados = pacientes.filter((p) => {
+    const texto = `${p.nombre} ${p.apellido} ${p.tutor}`.toLowerCase();
+    return texto.includes(search.toLowerCase());
+  });
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -139,6 +214,26 @@ export default function DiagnosticoPPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Card className="mb-6">
           <CardHeader>
+            <CardTitle>Buscar Pacientes</CardTitle>
+            <CardDescription>
+              Filtre por nombre del paciente o tutor
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="relative">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+              <Input
+                className="pl-10"
+                placeholder="Buscar por nombre del paciente o tutor..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="mb-6">
+          <CardHeader>
             <CardTitle>Pacientes Sin Diagnóstico</CardTitle>
             <CardDescription>
               {pacientes.length} paciente
@@ -148,9 +243,9 @@ export default function DiagnosticoPPage() {
           </CardHeader>
 
           <CardContent>
-            {pacientes.length === 0 ? (
+            {pacientesFiltrados.length === 0 ? (
               <p className="text-gray-600">
-                No hay pacientes pendientes de diagnóstico.
+                No hay pacientes pendientes.
               </p>
             ) : (
               <Table>
@@ -168,7 +263,7 @@ export default function DiagnosticoPPage() {
                 </TableHeader>
 
                 <TableBody>
-                  {pacientes.map((row) => (
+                  {pacientesFiltrados.map((row) => (
                     <TableRow key={row.resultadoId}>
                       <TableCell className="font-medium">
                         {row.nombre} {row.apellido}

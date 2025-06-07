@@ -51,6 +51,7 @@ export default function PatientsPage() {
   const [patients, setPatients] = useState<PacienteEstadoEvaluacionDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [dashboardUrl, setDashboardUrl] = useState("/dashboard");
 
   useEffect(() => {
     const fetchPatients = async () => {
@@ -68,6 +69,19 @@ export default function PatientsPage() {
     };
 
     fetchPatients();
+  }, []);
+
+  useEffect(() => {
+    const userCookie = Cookies.get("user");
+    if (userCookie) {
+      const user = JSON.parse(userCookie);
+      const rol = user.Rol?.rol || user.Rol || "";
+      if (rol === "Administrador") setDashboardUrl("/dashboard/admin");
+      else if (rol === "Especialista")
+        setDashboardUrl("/dashboard/especialistaDash");
+      else if (rol === "Recepcionista")
+        setDashboardUrl("/dashboard");
+    }
   }, []);
 
   const filteredPatients = patients.filter(
@@ -155,7 +169,7 @@ export default function PatientsPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-4">
-              <Link href="/dashboard" className="flex items-center space-x-2">
+              <Link href={dashboardUrl} className="flex items-center space-x-2">
                 <Heart className="h-8 w-8 text-teal-600" />
                 <span className="text-xl font-bold text-gray-900">
                   AutismoCare
@@ -163,7 +177,7 @@ export default function PatientsPage() {
               </Link>
             </div>
             <Button variant="ghost" asChild>
-              <Link href="/dashboard" className="flex items-center space-x-2">
+              <Link href={dashboardUrl} className="flex items-center space-x-2">
                 <ArrowLeft className="h-4 w-4" />
                 <span>Volver al Dashboard</span>
               </Link>

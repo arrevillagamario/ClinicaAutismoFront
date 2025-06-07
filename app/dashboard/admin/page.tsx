@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { ArrowLeft, Heart, Search, UserPlus, Eye, Calendar, FileText } from "lucide-react"
 
-export default function PacientePage() {
+export default function adminPage() {
   const [searchTerm, setSearchTerm] = useState("")
 
   // Datos simulados de pacientes

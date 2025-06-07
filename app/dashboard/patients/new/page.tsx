@@ -1,7 +1,7 @@
 "use client";
 
 import type React from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -49,6 +49,22 @@ export default function NewPatientPage() {
     genero: "",
     observaciones: "",
   });
+
+  const [dashboardUrl, setDashboardUrl] = useState("/dashboard");
+
+  useEffect(() => {
+    const userCookie = Cookies.get("user");
+    if (userCookie) {
+      const user = JSON.parse(userCookie);
+      const rol = user.Rol?.rol || user.Rol || ""; // Ajusta según cómo guardes el rol
+      if (rol === "Administrador") setDashboardUrl("/dashboard/admin");
+      else if (rol === "Especialista")
+        setDashboardUrl("/dashboard/especialistaDash");
+      else if (rol === "Recepcionista")
+        setDashboardUrl("/dashboard");
+      // Puedes agregar más roles si es necesario
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -128,7 +144,6 @@ export default function NewPatientPage() {
     }
   };
 
-  // ... (resto del componente permanece igual)
   if (success) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -156,7 +171,7 @@ export default function NewPatientPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-4">
-              <Link href="/dashboard" className="flex items-center space-x-2">
+              <Link href={dashboardUrl} className="flex items-center space-x-2">
                 <Heart className="h-8 w-8 text-teal-600" />
                 <span className="text-xl font-bold text-gray-900">
                   AutismoCare
@@ -164,7 +179,7 @@ export default function NewPatientPage() {
               </Link>
             </div>
             <Button variant="ghost" asChild>
-              <Link href="/dashboard" className="flex items-center space-x-2">
+              <Link href={dashboardUrl} className="flex items-center space-x-2">
                 <ArrowLeft className="h-4 w-4" />
                 <span>Volver al Dashboard</span>
               </Link>
