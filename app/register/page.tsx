@@ -16,6 +16,7 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Heart, Eye, EyeOff } from "lucide-react";
 import axios from "axios";
+import Cookies from "js-cookie";
 
 const ROLES = [
   { id: 1, label: "Administrador" },
@@ -36,6 +37,25 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
+  // Handler para volver al dashboard según el rol
+  const handleVolverDashboard = () => {
+    const userCookie = Cookies.get("user");
+    if (!userCookie) {
+      router.push("/login");
+      return;
+    }
+    const user = JSON.parse(userCookie);
+    const rol = user.Rol?.rol;
+
+    if (rol === "Administrador") {
+      router.push("/dashboard/admin");
+    } else if (rol === "Especialista") {
+      router.push("/dashboard/especialistaDash");
+    } else if (rol === "Recepcionista") {
+      router.push("/dashboard");
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -46,19 +66,24 @@ export default function RegisterPage() {
         throw new Error("Por favor complete todos los campos");
       }
       if (rolID === 3 && (!especialidad || !licencia)) {
-        throw new Error("Especialidad y licencia son requeridas para especialistas");
+        throw new Error(
+          "Especialidad y licencia son requeridas para especialistas"
+        );
       }
 
       // 1. Crear empleado
-      const empleadoRes = await axios.post("https://localhost:7032/api/Empleado", {
-        rolID,
-        nombre,
-        apellido,
-        email,
-        contrasena: password,
-        activo: true,
-        fechaRegistro: new Date().toISOString(),
-      });
+      const empleadoRes = await axios.post(
+        "https://localhost:7032/api/Empleado",
+        {
+          rolID,
+          nombre,
+          apellido,
+          email,
+          contrasena: password,
+          activo: true,
+          fechaRegistro: new Date().toISOString(),
+        }
+      );
 
       // 2. Si es especialista, crear especialista
       if (rolID === 3) {
@@ -218,13 +243,17 @@ export default function RegisterPage() {
             </form>
 
             <div className="mt-6 text-center text-sm">
-              <Link
-                href="/login"
-                className="text-teal-600 hover:underline"
-              >
+              <Link href="/login" className="text-teal-600 hover:underline">
                 ¿Ya tienes cuenta? Inicia sesión
               </Link>
             </div>
+            <Button
+              type="button"
+              className="w-40 mt-4 bg-teal-600  hover:bg-teal-700"
+              onClick={handleVolverDashboard}
+            >
+              Volver al Dashboard
+            </Button>
           </CardContent>
         </Card>
       </div>

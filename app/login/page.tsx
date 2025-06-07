@@ -63,8 +63,8 @@ export default function LoginPage() {
         const rol = response.data.rol.rol; // Por ejemplo: "Especialista", "Paciente", etc.
         if (rol === "Especialista") {
           router.push("/dashboard/especialistaDash");
-        } else if (rol === "Paciente") {
-          router.push("/dashboard/paciente");
+        } else if (rol === "Administrador") {
+          router.push("/dashboard/admin");
         } else {
           router.push("/dashboard");
         }

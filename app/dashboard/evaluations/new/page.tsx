@@ -123,6 +123,26 @@ export default function NewEvaluationPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const handleVolverDashboard = () => {
+    const userCookie = Cookies.get("user");
+    if (!userCookie) {
+      router.push("/login");
+      return;
+    }
+    const user = JSON.parse(userCookie);
+    const rol = user.Rol?.rol;
+
+    if (rol === "Administrador") {
+      router.push("/dashboard/admin");
+    } else if (rol === "Especialista") {
+      router.push("/dashboard/especialistaDash");
+    } else if (rol === "Recepcionista") {
+      router.push("/dashboard");
+    } else {
+      router.push("/dashboard");
+    }
+  };
+
   // Función para actualizar el estado de la sesión
   const updateSessionStatus = async (sessionId: number) => {
     try {
@@ -247,7 +267,7 @@ export default function NewEvaluationPage() {
   // 7. Si está cargando datos del paciente
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-teal-50 flex items-center justify-center">
         <div>Cargando datos del paciente...</div>
       </div>
     );
@@ -256,7 +276,7 @@ export default function NewEvaluationPage() {
   // 8. Si hubo algún error
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-teal-50 flex items-center justify-center">
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
         </Alert>
@@ -267,12 +287,14 @@ export default function NewEvaluationPage() {
   // 9. Mostrar confirmación tras guardar definitivamente
   if (showResultsSummary && saved && resultPartial) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-teal-50">
         <header className="bg-white shadow-sm border-b">
           <div className="max-w-7xl mx-auto px-4 py-4 flex items-center">
             <Link href="/dashboard" className="flex items-center space-x-2">
               <Heart className="h-8 w-8 text-teal-600" />
-              <span className="text-xl font-bold">AutismoCare</span>
+              <span className="text-xl font-bold text-teal-700">
+                AutismoCare
+              </span>
             </Link>
           </div>
         </header>
@@ -280,34 +302,41 @@ export default function NewEvaluationPage() {
           <Card>
             <CardHeader>
               <div className="mb-4">
-                <CheckCircle className="text-green-600 w-12 h-12 mx-auto" />
+                <CheckCircle className="text-teal-600 w-12 h-12 mx-auto" />
               </div>
-              <CardTitle className="text-2xl">Resultado Guardado</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-2xl text-teal-700">
+                Resultado Guardado
+              </CardTitle>
+              <CardDescription className="text-teal-600">
                 Paciente: {patientData?.nombre} {patientData?.apellido}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <p className="text-lg">
+              <p className="text-lg text-teal-700">
                 Puntuación Total: <strong>{resultPartial.totalScore}</strong>
               </p>
-              <p className="text-lg">
+              <p className="text-lg text-teal-700">
                 Promedio: <strong>{resultPartial.avg.toFixed(2)}</strong>
               </p>
               <Alert>
                 <AlertDescription>
-                  Nivel de Riesgo: <strong>{resultPartial.riskLevel}</strong>
+                  Nivel de Riesgo:{" "}
+                  <strong className="text-teal-700">
+                    {resultPartial.riskLevel}
+                  </strong>
                 </AlertDescription>
               </Alert>
-              <div className="text-left bg-gray-50 border rounded-md p-4">
-                <h3 className="font-medium mb-2">Observaciones:</h3>
-                <pre className="text-sm text-gray-700 overflow-x-auto">
+              <div className="text-left bg-teal-50 border rounded-md p-4">
+                <h3 className="font-medium mb-2 text-teal-700">
+                  Observaciones:
+                </h3>
+                <pre className="text-sm text-teal-800 overflow-x-auto">
                   {manualObservations}
                 </pre>
               </div>
               <Button
-                className="mt-4"
-                onClick={() => router.push("/dashboard")}
+                className="mt-4 bg-teal-600 hover:bg-teal-700 text-white"
+                onClick={handleVolverDashboard}
               >
                 Volver al Dashboard
               </Button>
@@ -321,12 +350,14 @@ export default function NewEvaluationPage() {
   // 10. Mostrar sólo el resumen de resultados con botón "Agregar Observaciones"
   if (showResultsSummary && !showObservationsForm && !saved && resultPartial) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-teal-50">
         <header className="bg-white shadow-sm border-b">
           <div className="max-w-7xl mx-auto px-4 py-4 flex items-center">
             <Link href="/dashboard" className="flex items-center space-x-2">
               <Heart className="h-8 w-8 text-teal-600" />
-              <span className="text-xl font-bold">AutismoCare</span>
+              <span className="text-xl font-bold text-teal-700">
+                AutismoCare
+              </span>
             </Link>
           </div>
         </header>
@@ -369,12 +400,14 @@ export default function NewEvaluationPage() {
   // 11. Mostrar formulario de observaciones (luego de ver el resumen)
   if (showResultsSummary && showObservationsForm && !saved && resultPartial) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-teal-50">
         <header className="bg-white shadow-sm border-b">
           <div className="max-w-7xl mx-auto px-4 py-4 flex items-center">
             <Link href="/dashboard" className="flex items-center space-x-2">
               <Heart className="h-8 w-8 text-teal-600" />
-              <span className="text-xl font-bold">AutismoCare</span>
+              <span className="text-xl font-bold text-teal-700">
+                AutismoCare
+              </span>
             </Link>
           </div>
         </header>
@@ -417,17 +450,17 @@ export default function NewEvaluationPage() {
     );
   }
 
-  // 12. Mostrar preguntas del M-CHAT mientras no se hayan finalizado
+  // 12. Mostrar preguntas del CARS-2 mientras no se hayan finalizado
   const progress = ((currentQuestion + 1) / mchatQuestions.length) * 100;
   const currentQ = mchatQuestions[currentQuestion];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-teal-50">
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
           <Link href="/dashboard" className="flex items-center space-x-2">
             <Heart className="w-8 h-8 text-teal-600" />
-            <span className="text-xl font-bold">AutismoCare</span>
+            <span className="text-xl font-bold text-teal-700">AutismoCare</span>
           </Link>
           <div className="text-sm text-gray-600">
             {patientData && (
@@ -439,11 +472,14 @@ export default function NewEvaluationPage() {
         </div>
       </header>
       <div className="max-w-2xl mx-auto px-4 py-8">
-        <Progress value={progress} className="mb-4" />
+        <Progress
+          value={progress}
+          className="mb-4 bg-teal-100 [&>div]:bg-teal-600"
+        />
         <Card>
           <CardHeader>
             <CardTitle>Pregunta {currentQuestion + 1}</CardTitle>
-            <CardDescription>M-CHAT-R/F</CardDescription>
+            <CardDescription>CARS-2</CardDescription>
           </CardHeader>
           <CardContent>
             <p className="mb-6 text-lg">{currentQ.question}</p>
@@ -481,12 +517,14 @@ export default function NewEvaluationPage() {
             <div className="flex justify-between mt-6">
               <Button
                 variant="outline"
+                className="border-teal-600 text-teal-700 hover:bg-teal-100"
                 onClick={handlePreviousQuestion}
                 disabled={currentQuestion === 0}
               >
                 <ArrowLeft className="w-4 h-4 mr-1" /> Anterior
               </Button>
               <Button
+                className="bg-teal-600 hover:bg-teal-700 text-white"
                 onClick={handleNextQuestion}
                 disabled={!answers[currentQ.id]}
               >

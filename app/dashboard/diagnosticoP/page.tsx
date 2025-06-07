@@ -36,21 +36,23 @@ import axios from "axios";
 
 // Tipo que representa un paciente pendiente de diagnóstico, con datos de la tabla Resultados:
 interface PendingPaciente {
-  id: number;                    // ID del paciente
+  id: number; // ID del paciente
   nombre: string;
   apellido: string;
   edad: string;
   tutor: string;
   telefono: string;
   ultimaEvaluacion: string | null;
-  resultadoId: number;           // ID en la tabla Resultados
-  riesgoAutismo: string;         // RiesgoAutismo de Resultados
-  observaciones: string;         // Observaciones de Resultados
+  resultadoId: number; // ID en la tabla Resultados
+  riesgoAutismo: string; // RiesgoAutismo de Resultados
+  observaciones: string; // Observaciones de Resultados
 }
 
 export default function DiagnosticoPPage() {
   const [pacientes, setPacientes] = useState<PendingPaciente[]>([]);
-  const [inputs, setInputs] = useState<{ [resultadoId: number]: { conclusion: string; detalles: string } }>({});
+  const [inputs, setInputs] = useState<{
+    [resultadoId: number]: { conclusion: string; detalles: string };
+  }>({});
   const [search, setSearch] = useState("");
   const especialistaId = 1;
 
@@ -58,49 +60,57 @@ export default function DiagnosticoPPage() {
     const fetchPendientes = async () => {
       try {
         // 1. Traer todos los pacientes con sesión
-        const res = await axios.get("https://localhost:7032/api/Paciente/pacientes-sesion");
+        const res = await axios.get(
+          "https://localhost:7032/api/Paciente/pacientes-sesion"
+        );
         const data = res.data;
 
         // 2. Filtrar solo los que tienen estadoSesion "completado"
-        const completados = data.filter((p: any) => p.estadoSesion === "completado");
+        const completados = data.filter(
+          (p: any) => p.estadoSesion === "completado"
+        );
 
         // 3. Para cada paciente, traer resultado y teléfono del tutor
-        const pacientesData: PendingPaciente[] = (await Promise.all(
-          completados.map(async (p: any) => {
-            // Traer resultados del paciente
-            const resultadoRes = await axios.get(
-              `https://localhost:7032/api/Resultado/por-paciente/${p.pacienteID}`
-            );
-            // Tomar el resultado que coincida con la sesión actual
-            const resultado = resultadoRes.data.find((r: any) => r.sessionID === p.sessionID);
-
-            if (!resultado) return null; // <-- Solo agrega si hay resultado
-
-            // Traer teléfono del tutor (si lo necesitas)
-            let telefono = "";
-            try {
-              const tutorRes = await axios.get(
-                `https://localhost:7032/api/Tutor/${p.tutorID}`
+        const pacientesData: PendingPaciente[] = (
+          await Promise.all(
+            completados.map(async (p: any) => {
+              // Traer resultados del paciente
+              const resultadoRes = await axios.get(
+                `https://localhost:7032/api/Resultado/por-paciente/${p.pacienteID}`
               );
-              telefono = tutorRes.data.telefono || "";
-            } catch {
-              telefono = "";
-            }
+              // Tomar el resultado que coincida con la sesión actual
+              const resultado = resultadoRes.data.find(
+                (r: any) => r.sessionID === p.sessionID
+              );
 
-            return {
-              id: p.pacienteID,
-              nombre: p.nombre,
-              apellido: p.apellido,
-              edad: calcularEdad(p.fechaNacimiento),
-              tutor: p.tutorNombre + " " + p.tutorApellido,
-              telefono,
-              ultimaEvaluacion: p.fechaRegistro,
-              resultadoId: resultado.resultadoID, // <-- Nunca será 0
-              riesgoAutismo: resultado.riesgoAutismo || "",
-              observaciones: resultado.observaciones || "",
-            };
-          })
-        )).filter(Boolean); // <-- Elimina los null
+              if (!resultado) return null; // <-- Solo agrega si hay resultado
+
+              // Traer teléfono del tutor (si lo necesitas)
+              let telefono = "";
+              try {
+                const tutorRes = await axios.get(
+                  `https://localhost:7032/api/Tutor/${p.tutorID}`
+                );
+                telefono = tutorRes.data.telefono || "";
+              } catch {
+                telefono = "";
+              }
+
+              return {
+                id: p.pacienteID,
+                nombre: p.nombre,
+                apellido: p.apellido,
+                edad: calcularEdad(p.fechaNacimiento),
+                tutor: p.tutorNombre + " " + p.tutorApellido,
+                telefono,
+                ultimaEvaluacion: p.fechaRegistro,
+                resultadoId: resultado.resultadoID, // <-- Nunca será 0
+                riesgoAutismo: resultado.riesgoAutismo || "",
+                observaciones: resultado.observaciones || "",
+              };
+            })
+          )
+        ).filter(Boolean); // <-- Elimina los null
 
         setPacientes(pacientesData);
       } catch (err) {
@@ -122,7 +132,9 @@ export default function DiagnosticoPPage() {
       años--;
       meses += 12;
     }
-    return `${años} año${años !== 1 ? "s" : ""} ${meses} mes${meses !== 1 ? "es" : ""}`;
+    return `${años} año${años !== 1 ? "s" : ""} ${meses} mes${
+      meses !== 1 ? "es" : ""
+    }`;
   }
 
   const handleInputChange = (
@@ -157,7 +169,7 @@ export default function DiagnosticoPPage() {
         especialistaID: especialistaId,
         conclusion: entry.conclusion.trim(),
         detalles: entry.detalles.trim(),
-        fechaDiagnostico: new Date().toISOString()
+        fechaDiagnostico: new Date().toISOString(),
       };
       await axios.post("https://localhost:7032/api/Diagnostico", payload);
 
@@ -244,9 +256,7 @@ export default function DiagnosticoPPage() {
 
           <CardContent>
             {pacientesFiltrados.length === 0 ? (
-              <p className="text-gray-600">
-                No hay pacientes pendientes.
-              </p>
+              <p className="text-gray-600">No hay pacientes pendientes.</p>
             ) : (
               <Table>
                 <TableHeader>
@@ -271,13 +281,7 @@ export default function DiagnosticoPPage() {
                       <TableCell>{row.edad}</TableCell>
                       <TableCell>{row.tutor}</TableCell>
                       <TableCell>{row.telefono}</TableCell>
-                      <TableCell>
-                        {row.ultimaEvaluacion
-                          ? new Date(
-                              row.ultimaEvaluacion
-                            ).toLocaleDateString("es-ES")
-                          : "Sin evaluar"}
-                      </TableCell>
+
                       <TableCell>{row.riesgoAutismo}</TableCell>
                       <TableCell>
                         <div className="max-h-16 overflow-y-auto text-sm text-gray-700">
@@ -289,7 +293,10 @@ export default function DiagnosticoPPage() {
                         {/* Botón que abre el modal */}
                         <Dialog>
                           <DialogTrigger asChild>
-                            <Button size="sm" className="bg-teal-600 hover:bg-teal-700">
+                            <Button
+                              size="sm"
+                              className="bg-teal-600 hover:bg-teal-700"
+                            >
                               Diagnosticar
                             </Button>
                           </DialogTrigger>
@@ -308,7 +315,9 @@ export default function DiagnosticoPPage() {
                                 </label>
                                 <Input
                                   placeholder="Ingrese conclusión..."
-                                  value={inputs[row.resultadoId]?.conclusion || ""}
+                                  value={
+                                    inputs[row.resultadoId]?.conclusion || ""
+                                  }
                                   onChange={(e) =>
                                     handleInputChange(
                                       row.resultadoId,
@@ -328,7 +337,9 @@ export default function DiagnosticoPPage() {
                                 <textarea
                                   placeholder="Ingrese detalles..."
                                   className="w-full border rounded-md px-2 py-1 text-sm resize-none h-24 focus:outline-none focus:ring-2 focus:ring-teal-400 mt-1"
-                                  value={inputs[row.resultadoId]?.detalles || ""}
+                                  value={
+                                    inputs[row.resultadoId]?.detalles || ""
+                                  }
                                   onChange={(e) =>
                                     handleInputChange(
                                       row.resultadoId,

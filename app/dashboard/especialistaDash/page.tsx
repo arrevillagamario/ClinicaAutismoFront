@@ -87,14 +87,13 @@ export default function DashboardPage() {
       icon: FileText,
       color: "text-green-600",
     },
-    
   ];
 
   const recentActivities = [
     {
       id: 1,
       patient: "Ana García",
-      action: "Evaluación M-CHAT-R completada",
+      action: "Evaluación CARS-2 completada",
       time: "Hace 2 horas",
       status: "completed",
     },
@@ -159,27 +158,6 @@ export default function DashboardPage() {
           <p className="text-gray-600 mt-2">
             Gestiona pacientes, evaluaciones y diagnósticos
           </p>
-        </div>
-
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {stats.map((stat, index) => (
-            <Card key={index} className="hover:shadow-lg transition-shadow">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">
-                      {stat.title}
-                    </p>
-                    <p className="text-3xl font-bold text-gray-900">
-                      {stat.value}
-                    </p>
-                  </div>
-                  <stat.icon className={`h-8 w-8 ${stat.color}`} />
-                </div>
-              </CardContent>
-            </Card>
-          ))}
         </div>
 
         {/* Quick Actions */}

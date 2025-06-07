@@ -1,101 +1,124 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { ArrowLeft, Heart, Search, UserPlus, Eye, Calendar, FileText } from "lucide-react"
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+  Users,
+  UserPlus,
+  ClipboardList,
+  FileText,
+  Calendar,
+  Heart,
+  LogOut,
+  Settings,
+} from "lucide-react";
+import Cookies from "js-cookie";
 
-export default function adminPage() {
-  const [searchTerm, setSearchTerm] = useState("")
+interface User {
+  EmpleadoID: number;
+  Email: string;
+  Nombre: string;
+  Apellido: string;
+  Rol: {
+    RolId: number;
+    rol: string;
+  };
+}
 
-  // Datos simulados de pacientes
-  const patients = [
+export default function AdminPage() {
+  const [user, setUser] = useState<User | null>(null);
+  const router = useRouter();
+
+  useEffect(() => {
+    const userCookie = Cookies.get("user");
+    if (!userCookie) {
+      router.push("/login");
+      return;
+    }
+
+    try {
+      const userData = JSON.parse(userCookie) as User;
+      setUser(userData);
+    } catch (error) {
+      console.error("Error parsing user cookie:", error);
+      router.push("/login");
+    }
+  }, [router]);
+
+  const handleLogout = () => {
+    Cookies.remove("user");
+    router.push("/login");
+  };
+
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        Cargando...
+      </div>
+    );
+  }
+
+  const stats = [
+    {
+      title: "Pacientes Registrados",
+      value: "127",
+      icon: Users,
+      color: "text-blue-600",
+    },
+    {
+      title: "Evaluaciones Pendientes",
+      value: "8",
+      icon: ClipboardList,
+      color: "text-orange-600",
+    },
+    {
+      title: "Evaluaciones Realizadas",
+      value: "45",
+      icon: FileText,
+      color: "text-green-600",
+    },
+  ];
+
+  const recentActivities = [
     {
       id: 1,
-      nombre: "Ana García",
-      apellido: "López",
-      edad: "2 años 3 meses",
-      tutor: "María López",
-      telefono: "+34 666 123 456",
-      ultimaEvaluacion: "2024-01-15",
-      estado: "Evaluado",
-      riesgo: "Bajo",
+      patient: "Ana García",
+      action: "Evaluación CARS-2 completada",
+      time: "Hace 2 horas",
+      status: "completed",
     },
     {
       id: 2,
-      nombre: "Carlos Martín",
-      apellido: "Ruiz",
-      edad: "1 año 8 meses",
-      tutor: "Juan Martín",
-      telefono: "+34 666 789 012",
-      ultimaEvaluacion: "2024-01-10",
-      estado: "Pendiente Diagnóstico",
-      riesgo: "Alto",
+      patient: "Carlos López",
+      action: "Nuevo paciente registrado",
+      time: "Hace 4 horas",
+      status: "new",
     },
     {
       id: 3,
-      nombre: "Sofía Rodríguez",
-      apellido: "Pérez",
-      edad: "3 años 1 mes",
-      tutor: "Carmen Rodríguez",
-      telefono: "+34 666 345 678",
-      ultimaEvaluacion: "2024-01-08",
-      estado: "Diagnosticado",
-      riesgo: "Moderado",
+      patient: "María Rodríguez",
+      action: "Diagnóstico pendiente",
+      time: "Hace 1 día",
+      status: "pending",
     },
     {
       id: 4,
-      nombre: "Miguel Fernández",
-      apellido: "Torres",
-      edad: "2 años 6 meses",
-      tutor: "Ana Torres",
-      telefono: "+34 666 901 234",
-      ultimaEvaluacion: null,
-      estado: "Sin Evaluar",
-      riesgo: null,
+      patient: "Luis Martín",
+      action: "Cita agendada",
+      time: "Hace 2 días",
+      status: "scheduled",
     },
-  ]
-
-  const filteredPatients = patients.filter(
-    (patient) =>
-      patient.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      patient.apellido.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      patient.tutor.toLowerCase().includes(searchTerm.toLowerCase()),
-  )
-
-  const getStatusBadge = (estado: string) => {
-    switch (estado) {
-      case "Evaluado":
-        return <Badge variant="secondary">Evaluado</Badge>
-      case "Pendiente Diagnóstico":
-        return <Badge className="bg-orange-100 text-orange-800">Pendiente Diagnóstico</Badge>
-      case "Diagnosticado":
-        return <Badge className="bg-green-100 text-green-800">Diagnosticado</Badge>
-      case "Sin Evaluar":
-        return <Badge variant="outline">Sin Evaluar</Badge>
-      default:
-        return <Badge variant="outline">{estado}</Badge>
-    }
-  }
-
-  const getRiskBadge = (riesgo: string | null) => {
-    if (!riesgo) return null
-
-    switch (riesgo) {
-      case "Alto":
-        return <Badge className="bg-red-100 text-red-800">Alto</Badge>
-      case "Moderado":
-        return <Badge className="bg-orange-100 text-orange-800">Moderado</Badge>
-      case "Bajo":
-        return <Badge className="bg-green-100 text-green-800">Bajo</Badge>
-      default:
-        return <Badge variant="outline">{riesgo}</Badge>
-    }
-  }
+  ];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -104,106 +127,83 @@ export default function adminPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-4">
-              <Link href="/dashboard" className="flex items-center space-x-2">
+              <Link href="/" className="flex items-center space-x-2">
                 <Heart className="h-8 w-8 text-teal-600" />
-                <span className="text-xl font-bold text-gray-900">AutismoCare</span>
+                <span className="text-xl font-bold text-gray-900">
+                  AutismoCare
+                </span>
               </Link>
+              <Badge variant="secondary">{user.Rol.rol}</Badge>
             </div>
-            <Button variant="ghost" asChild>
-              <Link href="/dashboard" className="flex items-center space-x-2">
-                <ArrowLeft className="h-4 w-4" />
-                <span>Volver al Dashboard</span>
-              </Link>
-            </Button>
+
+            <div className="flex items-center space-x-4">
+              <span className="text-sm text-gray-600">
+                Bienvenido, {user.Nombre} {user.Apellido}
+              </span>
+              <Button variant="ghost" size="sm">
+                <Settings className="h-4 w-4" />
+              </Button>
+              <Button variant="ghost" size="sm" onClick={handleLogout}>
+                <LogOut className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </div>
       </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header Section */}
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Mis Resultados</h1>
-            <p className="text-gray-600 mt-2">Hola Bienvenido.......</p>
-          </div>
+        {/* Welcome Section */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">Panel de Control</h1>
+          <p className="text-gray-600 mt-2">
+            Gestiona pacientes, evaluaciones y diagnósticos
+          </p>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Total Evaluaciones</p>
-                  <p className="text-3xl font-bold text-gray-900">{patients.length}</p>
-                </div>
-                <div className="p-3 bg-blue-100 rounded-full">
-                  <UserPlus className="h-6 w-6 text-blue-600" />
-                </div>
+        {/* Quick Actions */}
+        <div className="grid lg:grid-cols-3 gap-6 mb-8">
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle>Acciones Rápidas</CardTitle>
+              <CardDescription>Tareas más comunes del sistema</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-4">
+                <Button
+                  asChild
+                  className="h-20 flex-col space-y-2 bg-teal-600 hover:bg-teal-700"
+                >
+                  <Link href="/dashboard/patients/new">
+                    <UserPlus className="h-6 w-6" />
+                    <span>Registrar Paciente</span>
+                  </Link>
+                </Button>
+
+                <Button
+                  asChild
+                  variant="outline"
+                  className="h-20 flex-col space-y-2"
+                >
+                  <Link href="/dashboard/patients">
+                    <Users className="h-6 w-6" />
+                    <span>Ver Pacientes</span>
+                  </Link>
+                </Button>
+                <Button
+                  asChild
+                  variant="outline"
+                  className="h-20 flex-col space-y-2"
+                >
+                  <Link href="/register">
+                    <Users className="h-6 w-6" />
+                    <span>Registrar Empleados</span>
+                  </Link>
+                </Button>
               </div>
             </CardContent>
           </Card>
         </div>
-
-        {/* Search and Filters */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Buscar Resultados</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Buscar..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Patients Table */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Lista de Resultados</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Puntuacion</TableHead>
-                  <TableHead>Riesgo de Autismo</TableHead>
-                  <TableHead>Observaciones</TableHead>
-                  <TableHead>Fecha</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredPatients.map((patient) => (
-                  <TableRow key={patient.id}>
-                    <TableCell className="font-medium">
-                      {patient.nombre} {patient.apellido}
-                    </TableCell>
-                    <TableCell>{patient.edad}</TableCell>
-                    <TableCell>{patient.tutor}</TableCell>
-                    <TableCell>{patient.telefono}</TableCell>
-                 
-                    <TableCell>
-                      <div className="flex space-x-2">
-                        <Button size="sm" variant="outline" asChild>
-                          <Link href={`/dashboard/patients/${patient.id}`}>
-                            <Eye className="h-4 w-4" />
-                          </Link>
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
       </div>
     </div>
-  )
+  );
 }

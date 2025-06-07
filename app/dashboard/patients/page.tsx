@@ -79,8 +79,7 @@ export default function PatientsPage() {
       if (rol === "Administrador") setDashboardUrl("/dashboard/admin");
       else if (rol === "Especialista")
         setDashboardUrl("/dashboard/especialistaDash");
-      else if (rol === "Recepcionista")
-        setDashboardUrl("/dashboard");
+      else if (rol === "Recepcionista") setDashboardUrl("/dashboard");
     }
   }, []);
 
@@ -223,24 +222,6 @@ export default function PatientsPage() {
                 </div>
                 <div className="p-3 bg-blue-100 rounded-full">
                   <UserPlus className="h-6 w-6 text-blue-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">
-                    Sin Evaluar
-                  </p>
-                  <p className="text-3xl font-bold text-gray-900">
-                    {patients.filter((p) => !p.estadoSesion).length}
-                  </p>
-                </div>
-                <div className="p-3 bg-orange-100 rounded-full">
-                  <Calendar className="h-6 w-6 text-orange-600" />
                 </div>
               </div>
             </CardContent>
